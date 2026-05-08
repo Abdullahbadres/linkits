@@ -1,0 +1,43 @@
+# Full stack for local testing (PostgreSQL + app). Same DB engine as production (Neon / Railway).
+# Usage: docker compose up --build
+#
+# For Railway: deploy this repo with Dockerfile; set DATABASE_URL to Neon (free) or Railway Postgres.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: linkit
+    ports:
+      - "5432:5432"
+    volumes:
+      - linkit-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d linkit"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/linkit?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-min-32-chars}
+      DEFAULT_ADMIN_USERNAME: ${DEFAULT_ADMIN_USERNAME:-admin}
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-admin123}
+      OMDB_API_KEY: ${OMDB_API_KEY:-thewdb}
+      TMDB_API_KEY: ${TMDB_API_KEY:-}
+      TMDB_ACCESS_TOKEN: ${TMDB_ACCESS_TOKEN:-}
+      TMDB_WATCH_REGION: ${TMDB_WATCH_REGION:-US}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  linkit-pg:
