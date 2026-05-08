@@ -15,7 +15,6 @@ export type AuthPayload = {
 };
 
 export async function ensureDefaultUser() {
-  const passwordHash = await bcrypt.hash(defaultPassword, 10);
   const existing = await prisma.user.findUnique({ where: { username: defaultUsername } });
   if (existing) {
     if (existing.role !== "ADMIN") {
@@ -26,6 +25,7 @@ export async function ensureDefaultUser() {
     }
     return existing;
   }
+  const passwordHash = await bcrypt.hash(defaultPassword, 10);
   return prisma.user.create({
     data: { username: defaultUsername, passwordHash, role: "ADMIN" },
   });

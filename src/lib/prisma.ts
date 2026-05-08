@@ -1,11 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 
-declare global {
-  var prisma: PrismaClient | undefined;
-}
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-export const prisma = global.prisma ?? new PrismaClient();
+/**
+ * One client per warm serverless instance (Vercel). Without this, production
+ * created a new PrismaClient on every request and could exhaust Neon pooler / time out.
+ */
+export const prisma = globalForPrisma.prisma ?? new PrismaClient();
 
-if (process.env.NODE_ENV !== "production") {
-  global.prisma = prisma;
-}
+globalForPrisma.prisma = prisma;
