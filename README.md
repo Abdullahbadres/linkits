@@ -261,4 +261,13 @@ npm run lint
 
 ---
 
+
+Can easily access on
+https://linkits-seven.vercel.app/ (by vercel)
+http://localhost:3001/ (docker)
+with the default (role: admin)
+user : admin
+password : admin123
+and can create as many (role: user) as needed to test.
+
 *This document describes the **linkit-app** project setup.
