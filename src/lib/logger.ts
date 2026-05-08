@@ -7,9 +7,21 @@ const appLogPath = path.join(logsDir, "app.log");
 const txLogPath = path.join(logsDir, "transaction.log");
 const errorLogPath = path.join(logsDir, "error.log");
 
+const isVercel = process.env.VERCEL === "1";
+
 async function writeLine(filePath: string, line: string) {
-  await mkdir(logsDir, { recursive: true });
-  await appendFile(filePath, line + "\n", "utf-8");
+  // Vercel serverless FS is read-only outside /tmp — file logging would throw and turn 200 → 500.
+  if (isVercel) {
+    console.info(`[linkit-log] ${line}`);
+    return;
+  }
+  try {
+    await mkdir(logsDir, { recursive: true });
+    await appendFile(filePath, line + "\n", "utf-8");
+  } catch (err) {
+    console.error("[linkit-log] file write failed:", err);
+    console.info(`[linkit-log] ${line}`);
+  }
 }
 
 export async function logApiRequest(params: {
