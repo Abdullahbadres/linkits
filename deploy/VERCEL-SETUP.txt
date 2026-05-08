@@ -1,0 +1,118 @@
+================================================================================
+LINKIT — deploy ke Vercel (dari nol) + variabel lingkungan selaras .env
+================================================================================
+
+Ringkasan
+---------
+• Aplikasi Next.js + Prisma + Postgres (Neon). Build di Vercel menjalankan
+  `prisma migrate deploy` lalu `next build` (script `vercel-build`).
+• File `ENV.vercel.template` berisi DAFTAR NAMA variabel yang harus Anda
+  isi di Vercel — nilainya SAMAKAN dengan `.env` lokal (copy manual).
+• `.env` tetap hanya di mesin Anda; JANGAN di-upload ke GitHub/Vercel sebagai file.
+
+Hubungan Dockerfile / localhost:3001
+------------------------------------
+• Deploy Vercel TIDAK memakai Dockerfile Anda. Dockerfile dipakai untuk
+  Docker / Railway setempat.
+• URL Vercel akan seperti https://nama-proyek.vercel.app (bukan :3001).
+
+================================================================================
+LANGKAH 1 — Akun & repo
+================================================================================
+1) Pastikan kode sudah di GitHub (mis. repo linkits).
+2) Buka https://vercel.com dan login (disarankan "Continue with GitHub").
+
+================================================================================
+LANGKAH 2 — Import proyek
+================================================================================
+1) Dashboard Vercel → "Add New…" → Project.
+2) "Import" repository GitHub Anda.
+3) Root Directory:
+   - Jika `package.json` di root repo → biarkan ".".
+   - Jika monorepo dan app di subfolder → set ke folder itu (mis. `linkit-app`).
+4) Framework Preset: Vercel biasanya mendeteksi Next.js otomatis.
+5) Build Command: harus memakai migrasi Prisma. File `vercel.json` sudah
+   mengatur: `npm run vercel-build`
+   (jika UI menimpa, set manual ke: npm run vercel-build)
+6) Output Directory: biarkan default (Next.js).
+7) Install Command: default `npm install` (cukup; `postinstall` menjalankan
+   `prisma generate`).
+
+================================================================================
+LANGKAH 3 — Environment Variables (selaras .env)
+================================================================================
+Di Vercel: Project → Settings → Environment Variables.
+
+Untuk SETIAP baris di file lokal `.env` Anda yang berbentuk NAMA=nilai,
+buat entri di Vercel dengan nama yang SAMA PERSIS.
+
+Daftar yang dipakai aplikasi ini (samakan dengan `.env` Anda):
+
+  DATABASE_URL          → Neon POOLED hostname (…-pooler…). WAJIB sertakan
+                          &pgbouncer=true pada query string (mis. setelah
+                          sslmode=require). Ini mencegah error 500 saat login
+                          di serverless (Prisma + PgBouncer).
+  DIRECT_URL            → Neon DIRECT (hostname TANPA “-pooler”). Dipakai
+                          Prisma untuk `migrate deploy` saat build. Salin dari
+                          Neon “direct” connection di Connect dialog.
+  JWT_SECRET            → string acak panjang (≥32 karakter disarankan).
+  DEFAULT_ADMIN_USERNAME→ opsional; default admin saat pertama login.
+  DEFAULT_ADMIN_PASSWORD→ opsional; ganti di production.
+  OMDB_API_KEY          → untuk sync film / OMDb.
+  TMDB_API_KEY          → opsional; enrichment TMDB (query api_key).
+  TMDB_ACCESS_TOKEN     → opsional; Bearer read token TMDB (diprioritaskan
+                          daripada TMDB_API_KEY jika keduanya ada).
+  TMDB_WATCH_REGION     → opsional; contoh US.
+
+Environment: centang Production, Preview, dan Development sesuai kebutuhan
+(minimal Production + Preview agar deploy & PR preview jalan).
+
+Klik Save. Deploy ulang setelah menambah/mengubah variabel.
+
+Cara "sync" praktis dengan .env
+-------------------------------
+1) Buka `.env` di editor.
+2) Buka `ENV.vercel.template` sebagai checklist nama variabel.
+3) Di Vercel, copy-paste nilai dari `.env` ke field Value (satu per satu).
+   Atau gunakan CLI (langkah opsional di bawah).
+
+================================================================================
+LANGKAH 4 — Deploy
+================================================================================
+1) Klik Deploy. Tunggu build selesai.
+2) Jika build gagal di `prisma migrate deploy`:
+   - Pastikan DATABASE_URL benar dan database Neon reachable dari internet.
+   - Pastikan migrasi belum dihapus dari repo.
+
+================================================================================
+LANGKAH 5 — Uji
+================================================================================
+1) Buka URL production Vercel → `/login`.
+2) Login dengan user admin dari DEFAULT_*.
+3) Coba `/api/health` di domain Vercel.
+
+================================================================================
+Opsional — Vercel CLI (tarik / dorong env)
+================================================================================
+  npm i -g vercel
+  cd folder-yang-berisi-package.json
+  vercel login
+  vercel link
+
+Mengunduh env dari Vercel ke file lokal (membuat .env.local, biasanya di-gitignore):
+  vercel env pull .env.local
+
+Mengunggah dari file (hati-hati jangan commit .env):
+  vercel env add DATABASE_URL
+
+Dokumentasi: https://vercel.com/docs/cli/env
+
+================================================================================
+Catatan Neon + Prisma di serverless
+================================================================================
+• Gunakan string koneksi yang direkomendasikan Neon untuk "serverless" /
+  "Vercel" bila ada.
+• Hindari memakai satu koneksi panjang tanpa pooling pada traffic serverless
+  tinggi; ikuti panduan Neon untuk Prisma.
+
+================================================================================

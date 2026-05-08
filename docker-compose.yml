@@ -24,10 +24,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    # Host 3001 → container 3000 (Dockerfile EXPOSE 3000). Use 3000:3000 if nothing else uses host 3000.
     ports:
       - "3001:3000"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/linkit?schema=public
+      DIRECT_URL: postgresql://postgres:postgres@db:5432/linkit?schema=public
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production-min-32-chars}
       DEFAULT_ADMIN_USERNAME: ${DEFAULT_ADMIN_USERNAME:-admin}
       DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-admin123}
