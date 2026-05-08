@@ -25,7 +25,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/linkit?schema=public
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production-min-32-chars}
